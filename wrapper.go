@@ -103,14 +103,6 @@ func (f *Factory) newWrapper(ctx context.Context, i *Injector, st txnState) *Wra
 
 }
 
-type txnState int
-
-const (
-	txnBefore txnState = iota
-	txnTerm
-	txnAfter
-)
-
 // Wrapper provides being able to operate orm.DB with functional option pattern.
 type Wrapper struct {
 	db    *gorm.DB
@@ -120,7 +112,7 @@ type Wrapper struct {
 // Begin provides delegation to gorm.DB.Begin().
 func (w *Wrapper) Begin() {
 	if w.state != txnBefore {
-		panic(fmt.Errorf("current txnState:%d", w.state))
+		panic(fmt.Errorf("current txnState: %s", w.state.String()))
 	}
 	w.db = w.db.Begin()
 	w.state = txnTerm
@@ -129,7 +121,7 @@ func (w *Wrapper) Begin() {
 // Commit provides delegation to gorm.DB.Commit().
 func (w *Wrapper) Commit() {
 	if w.state != txnTerm {
-		panic(fmt.Errorf("current txnState:%d", w.state))
+		panic(fmt.Errorf("current txnState: %s", w.state.String()))
 	}
 	w.db = w.db.Commit()
 	w.state = txnAfter
@@ -141,7 +133,7 @@ func (w *Wrapper) Rollback() {
 	case txnAfter:
 		return
 	case txnBefore:
-		panic(fmt.Errorf("current txnState:%d", w.state))
+		panic(fmt.Errorf("current txnState: %s", w.state.String()))
 	}
 	w.db = w.db.Rollback()
 	w.state = txnAfter
