@@ -67,17 +67,20 @@ type DBSelector interface {
 type Factory struct {
 	master   *gorm.DB
 	slave    *gorm.DB
-	injector Injector
+	injector InjectorFn
 }
 
-// Injector provides filling process in gorm.DB object or injecting process in other object by gorm.DB.
-type Injector func(*gorm.DB) *gorm.DB
+// Injector represents gorm.DB wrapper for injection.
+type Injector struct {
+	DB *gorm.DB
+}
+
+// InjectorFn provides filling process in gorm.DB object or injecting process in other object by gorm.DB.
+type InjectorFn func(context.Context, *Injector)
 
 // NewFactory returns Wrapper with write permission.
-func NewFactory(master, slave *gorm.DB, injectors ...Injector) *Factory {
-	injector := func(db *gorm.DB) *gorm.DB {
-		return db
-	}
+func NewFactory(master, slave *gorm.DB, injectors ...InjectorFn) *Factory {
+	injector := func(context.Context, *Injector) {}
 	if len(injectors) > 0 {
 		injector = injectors[0]
 	}
@@ -86,12 +89,18 @@ func NewFactory(master, slave *gorm.DB, injectors ...Injector) *Factory {
 
 // Reader returns ORM Wrapper without write permission.
 func (f *Factory) Reader(ctx context.Context) ReadOnly {
-	return &Wrapper{db: f.injector(f.slave), state: txnAfter}
+	return f.newWrapper(ctx, &Injector{f.slave}, txnAfter)
 }
 
 // Writer returns ORM Wrapper with write permission.
 func (f *Factory) Writer(ctx context.Context) WriterTxn {
-	return &Wrapper{db: f.injector(f.master), state: txnBefore}
+	return f.newWrapper(ctx, &Injector{f.master}, txnBefore)
+}
+
+func (f *Factory) newWrapper(ctx context.Context, i *Injector, st txnState) *Wrapper {
+	f.injector(ctx, i)
+	return &Wrapper{db: i.DB, state: st}
+
 }
 
 type txnState int
