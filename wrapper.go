@@ -12,6 +12,7 @@ type tableDTO interface {
 }
 
 type queries interface {
+	Count(tableDTO, ...OptFn) (int, error)
 	Find(tableDTO, ...OptFn) error
 	FindMulti([]tableDTO, ...OptFn) error
 }
@@ -137,6 +138,20 @@ func (w *Wrapper) Rollback() {
 	}
 	w.db = w.db.Rollback()
 	w.state = txnAfter
+}
+
+// Count provides wrapping operation for gorm.DB.Count().
+func (w *Wrapper) Count(dto tableDTO, opts ...OptFn) (int, error) {
+	sth := w.db
+	for _, fn := range opts {
+		sth = fn(sth)
+	}
+	count := 0
+	res := sth.Model(dto).Count(&count)
+	if res.Error != nil {
+		return count, res.Error
+	}
+	return count, nil
 }
 
 // Find provides wrapping operation for gorm.DB.First().
