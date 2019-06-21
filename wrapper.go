@@ -11,10 +11,12 @@ type tableDTO interface {
 	TableName() string
 }
 
+type tableDTOCollection interface{}
+
 type queries interface {
 	Count(tableDTO, ...OptFn) (int, error)
 	Find(tableDTO, ...OptFn) error
-	FindMulti([]tableDTO, ...OptFn) error
+	FindMulti(tableDTOCollection, ...OptFn) error
 }
 
 type commands interface {
