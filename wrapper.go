@@ -173,7 +173,7 @@ func (w *Wrapper) Find(out tableDTO, opts ...OptFn) error {
 }
 
 // FindMulti provides wrapping operation for gorm.DB.Find().
-func (w *Wrapper) FindMulti(outs []tableDTO, opts ...OptFn) error {
+func (w *Wrapper) FindMulti(outs tableDTOCollection, opts ...OptFn) error {
 	sth := w.db
 	for _, fn := range opts {
 		sth = fn(sth)
