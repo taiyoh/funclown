@@ -22,7 +22,6 @@ func initDB() (*gorm.DB, sqlmock.Sqlmock, error) {
 	if err != nil {
 		panic(err)
 	}
-	// gdb.LogMode(true)
 
 	return gdb, mock, nil
 }
@@ -237,6 +236,77 @@ func TestWrapperDelete(t *testing.T) {
 		if err := db.Delete(u, fns.Slice()...); err != nil {
 			t.Error(err)
 		}
+	})
+}
+
+func TestTxnBehavior(t *testing.T) {
+	gdb, mock, err := initDB()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer gdb.Close()
+	factory := funclown.NewFactory(gdb, gdb)
+	db := factory.Writer(context.Background())
+
+	t.Run("suddenly rollback", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r != nil {
+				return // OK
+			}
+			t.Error("recover not found")
+		}()
+		db.Rollback()
+	})
+
+	t.Run("suddenly commit", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r != nil {
+				return // OK
+			}
+			t.Error("recover not found")
+		}()
+		db.Commit()
+	})
+
+	mock.ExpectBegin()
+	db.Begin()
+
+	t.Run("rollback", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r != nil {
+				// OK
+				return
+			}
+			t.Error("recover not found")
+		}()
+		mock.ExpectRollback()
+		db.Rollback()
+		db.Commit()
+	})
+
+	db = factory.Writer(context.Background())
+	mock.ExpectBegin()
+	db.Begin()
+
+	mock.ExpectRollback()
+	db.Commit()
+
+	t.Run("panic not happens", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r != nil {
+				t.Error("panic happens", r)
+			}
+		}()
+		db.Rollback()
+	})
+	t.Run("panic happens", func(t *testing.T) {
+		defer func() {
+			if r := recover(); r != nil {
+				return // OK
+			}
+			t.Error("recover not found")
+		}()
+		db.Begin()
 	})
 
 }
