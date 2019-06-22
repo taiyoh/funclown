@@ -24,30 +24,18 @@ type commands interface {
 	Delete(tableDTO, ...OptFn) error
 }
 
-// NewWriter provides interface for new crud interface.
-type NewWriter interface {
-	New(context.Context) WriterTxn
+// TxnBehavior provides that this object can operate transaction.
+type TxnBehavior interface {
+	Begin()
+	Rollback()
+	Commit()
 }
 
 // Writer provides interface for repository use.
 type Writer interface {
 	queries
 	commands
-}
-
-// WriterTxn provides interface for database operation with beginning transaction.
-type WriterTxn interface {
-	queries
-	commands
-	Begin()
-}
-
-// WriterInTxn provides interface for database operation in transaction.
-type WriterInTxn interface {
-	queries
-	commands
-	Commit()
-	Rollback()
+	TxnBehavior
 }
 
 // ReadOnly provides read methods only.
@@ -55,15 +43,10 @@ type ReadOnly interface {
 	queries
 }
 
-// NewReader provides interface for new finder interface.
-type NewReader interface {
-	New(context.Context) ReadOnly
-}
-
 // DBSelector provides read-only orm and writable orm.
 type DBSelector interface {
 	Reader(context.Context) ReadOnly
-	Writer(context.Context) WriterTxn
+	Writer(context.Context) Writer
 }
 
 // Factory provides building Wrapper object.
@@ -96,14 +79,13 @@ func (f *Factory) Reader(ctx context.Context) ReadOnly {
 }
 
 // Writer returns ORM Wrapper with write permission.
-func (f *Factory) Writer(ctx context.Context) WriterTxn {
+func (f *Factory) Writer(ctx context.Context) Writer {
 	return f.newWrapper(ctx, &Injector{f.master}, txnBefore)
 }
 
 func (f *Factory) newWrapper(ctx context.Context, i *Injector, st txnState) *Wrapper {
 	f.injector(ctx, i)
 	return &Wrapper{db: i.DB, state: st}
-
 }
 
 // Wrapper provides being able to operate orm.DB with functional option pattern.
