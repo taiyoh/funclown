@@ -39,7 +39,7 @@ func Offset(offset int) OptFn {
 // ForUpdate returns function for orm.DB.Set("gorm:query_option", "for update") operation.
 func ForUpdate() OptFn {
 	return func(db *gorm.DB) *gorm.DB {
-		return db.Set("gorm:query_option", "for update")
+		return db.Set("gorm:query_option", "FOR UPDATE")
 	}
 }
 
@@ -59,4 +59,9 @@ func (c OptFnCollection) Add(fns ...OptFn) OptFnCollection {
 		return c
 	}
 	return append(c, fns...)
+}
+
+// Slice provides type casting from OptFnCollection to []OptFn.
+func (c OptFnCollection) Slice() []OptFn {
+	return []OptFn(c)
 }
