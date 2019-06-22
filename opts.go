@@ -23,14 +23,14 @@ func Order(value interface{}, reorder ...bool) OptFn {
 }
 
 // Limit returns function for orm.DB.Limit operation.
-func Limit(limit interface{}) OptFn {
+func Limit(limit int) OptFn {
 	return func(db *gorm.DB) *gorm.DB {
 		return db.Limit(limit)
 	}
 }
 
 // Offset returns function for orm.DB.Offset operation.
-func Offset(offset interface{}) OptFn {
+func Offset(offset int) OptFn {
 	return func(db *gorm.DB) *gorm.DB {
 		return db.Offset(offset)
 	}

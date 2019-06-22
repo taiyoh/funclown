@@ -86,7 +86,6 @@ func (f *Factory) Writer(ctx context.Context) Writer {
 func (f *Factory) newWrapper(ctx context.Context, i *Injector, st txnState) *Wrapper {
 	f.injector(ctx, i)
 	return &Wrapper{db: i.DB, state: st}
-
 }
 
 // Wrapper provides being able to operate orm.DB with functional option pattern.
